@@ -6,7 +6,7 @@ message(STATUS "Downloading weqeqq/file-cpp...")
 FetchContent_Declare(
   file 
   GIT_REPOSITORY https://github.com/weqeqq/file-cpp.git 
-  GIT_TAG        309d31c128da07bcccf8fb5a67e2df52533d4d43
+  GIT_TAG        06108062077d0d6abd8550988fd8cf5a9f5d3d11
   GIT_SHALLOW    ON
 )
 FetchContent_MakeAvailable(
