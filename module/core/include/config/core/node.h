@@ -46,6 +46,51 @@ struct Deserialiser {
 
 namespace Detail {
 
+/// Type trait to check if a type is String.
+template <typename T>
+static constexpr bool IsString = 
+  std::is_same_v<T, std::string>      ||
+  std::is_same_v<T, std::string_view> || 
+  std::is_same_v<T, const char *>;
+
+template <typename T>
+concept String = IsString<T>;
+
+/// Type trait to check if a type is Boolean.
+template <typename T>
+static constexpr bool IsBoolean = std::is_same_v<T, bool>;
+
+template <typename T>
+concept Boolean = IsBoolean<T>;
+
+/// Type trait to check if a type is an integral type.
+template <typename T>
+static constexpr bool IsInteger = std::is_integral_v<T>;
+
+template <typename T>
+concept Integer = IsInteger<T>;
+
+/// Type trait to check if a type is a floating-point type.
+template <typename T>
+static constexpr bool IsFloating = std::is_floating_point_v<T>;
+
+template <typename T>
+concept Floating = IsFloating<T>;
+
+/// Type trait to check if a type is Sequence.
+template <typename T>
+static constexpr bool IsSequence = std::is_same_v<T, std::vector<Node>>;
+
+template <typename T>
+concept Sequence = IsSequence<T>;
+
+/// Type trait to check if a type is Object.
+template <typename T>
+static constexpr bool IsObject = std::is_same_v<T, std::unordered_map<std::string, Node>>;
+
+template <typename T>
+concept Object = IsObject<T>;
+
 template <typename Serialiser, typename Input>
 concept SerialiserImpl = 
 requires(
@@ -142,6 +187,7 @@ enum class NodeType {
 /**
  * @class Node
  * @brief A class representing a configuration node with variant data types.
+come up with a name for the commit 
  *
  * The Node class encapsulates a std::variant that can hold different types of data:
  * null, string, boolean, integer, floating-point, sequence, or object. It provides
@@ -172,23 +218,26 @@ class Node {
    */
   Node() : value_(Null()) {}
 
-  /**
-   * @brief Constructs a Node from a string.
-   * @param string The string value to initialize the Node with.
-   */
-  Node(String string) : value_(std::move(string)) {}
+  // /**
+  //  * @brief Constructs a Node from a string.
+  //  * @param string The string value to initialize the Node with.
+  //  */
+  // Node(String string) : value_(std::move(string)) {}
+  //
+  // /**
+  //  * @brief Constructs a Node from a C-string.
+  //  * @param c_string The C-string to initialize the Node with.
+  //  */
+  // Node(const char *c_string) : value_(String(c_string)) {}
+  //
+  // /**
+  //  * @brief Constructs a Node from a string view.
+  //  * @param string_view The string view to initialize the Node with.
+  //  */
+  // Node(std::string_view string_view) : value_(String(string_view)) {}
 
-  /**
-   * @brief Constructs a Node from a C-string.
-   * @param c_string The C-string to initialize the Node with.
-   */
-  Node(const char *c_string) : value_(String(c_string)) {}
-
-  /**
-   * @brief Constructs a Node from a string view.
-   * @param string_view The string view to initialize the Node with.
-   */
-  Node(std::string_view string_view) : value_(String(string_view)) {}
+  template <Detail::String S>
+  Node(S string) : value_(String(std::move(string))) {}
 
   /**
    * @brief Constructs a Node from a boolean.
@@ -200,28 +249,32 @@ class Node {
    * @brief Constructs a Node from an integer.
    * @param integer The integer value to initialize the Node with.
    */
-  Node(Integer integer) : value_(integer) {}
+  template <Detail::Integer I>
+  Node(I integer) : value_(Integer(integer)) {}
 
   /**
    * @brief Constructs a Node from a floating-point value.
    * @param floating The floating-point value to initialize the Node with.
    */
-  Node(Floating floating) : value_(floating) {}
+  template <Detail::Floating F>
+  Node(F floating) : value_(Floating(floating)) {}
 
   /**
    * @brief Constructs a Node from a sequence of nodes.
    * @param sequence The sequence to initialize the Node with.
    */
-  Node(Sequence sequence) : value_(std::move(sequence)) {}
+  template <Detail::Sequence S>
+  Node(S sequence) : value_(std::move(sequence)) {}
 
   /**
    * @brief Constructs a Node from an object.
    * @param object The object to initialize the Node with.
    */
-  Node(Object object) : value_(std::move(object)) {}
+  template <Detail::Object O>
+  Node(O object) : value_(std::move(object)) {}
 
   template <Detail::HasSerialiserImpl Input>
-  Node(Input input) : Node() {
+  Node(const Input &input) : Node() {
     Detail::CallSerialiser(input, *this);
   }
 
@@ -274,22 +327,22 @@ class Node {
    */
   template <typename T>
   constexpr bool Is() const {
-    if constexpr (IsStringT<T>) {
+    if constexpr (Detail::IsString<T>) {
       return IsString();
     }
-    if constexpr (IsBooleanT<T>) {
+    if constexpr (Detail::IsBoolean<T>) {
       return IsBoolean();
     }
-    if constexpr (IsIntegerT<T>) {
+    if constexpr (Detail::IsInteger<T>) {
       return IsInteger();
     }
-    if constexpr (IsFloatingT<T>) {
+    if constexpr (Detail::IsFloating<T>) {
       return IsFloating();
     }
-    if constexpr (IsSequenceT<T>) {
+    if constexpr (Detail::IsSequence<T>) {
       return IsSequence();
     }
-    if constexpr (IsObjectT<T>) {
+    if constexpr (Detail::IsObject<T>) {
       return IsObject();
     }
     return false;
@@ -379,37 +432,16 @@ class Node {
    */
   const Object &AsObject() const { return As<Object>(*this); }
 
-  /**
-   * @brief Converts the Node's value to the specified type.
-   * @tparam T The target type for conversion.
-   * @return The converted value.
-   * @throws NodeError if conversion is not possible.
-   */
-  template <typename T>
-  T To() {
-    if constexpr (IsStringT<T>) {
-      return static_cast<T>(AsString());
-    }
-    if constexpr (IsBooleanT<T>) {
-      return static_cast<T>(AsBoolean());
-    }
-    if constexpr (IsIntegerT<T>) {
-      return static_cast<T>(AsInteger());
-    }
-    if constexpr (IsFloatingT<T>) {
-      return static_cast<T>(AsFloating());
-    }
-    if constexpr (IsSequenceT<T>) {
-      return static_cast<T>(AsSequence());
-    }
-    if constexpr (IsObjectT<T>) {
-      return static_cast<T>(AsObject());
-    }
-    throw NodeError(std::format(
-        "Conversion {} -> {} failed.", TypeString(), Demangle<T>()));
+  template <Detail::Integer I>
+  I To() const {
+    return static_cast<I>(AsInteger());
+  }
+  template <Detail::Floating F>
+  F To() const {
+    return static_cast<F>(AsFloating());
   }
   template <Detail::HasDeserialiserImpl Output>
-  Output To() {
+  Output To() const {
     Output output;
     Detail::CallDeserialiser(*this, output);
 
@@ -500,33 +532,49 @@ class Node {
    */
   operator const Object &() const { return AsObject(); }
 
+  template <Detail::Integer I>
+  operator I() const {
+    return To<I>();
+  }
+
+  template <Detail::Floating F>
+  operator F() const {
+    return To<F>();
+  }
+
+  template <Detail::HasDeserialiserImpl O> 
+  operator O() const {
+    return To<O>();
+  }
+
   /**
    * @brief Assigns a string value to the Node.
    * @param string The string value to assign.
    * @return Reference to the Node.
    */
-  Node &operator=(String string) {
-    value_ = std::move(string);
+  template <Detail::String S>
+  Node &operator=(S string) {
+    value_ = String(std::move(string));
     return *this;
   }
 
-  /**
-   * @brief Assigns a string view to the Node.
-   * @param string_view The string view to assign.
-   * @return Reference to the Node.
-   */
-  Node &operator=(std::string_view string_view) {
-    return operator=(String(string_view));
-  }
-
-  /**
-   * @brief Assigns a C-string to the Node.
-   * @param c_string The C-string to assign.
-   * @return Reference to the Node.
-   */
-  Node &operator=(const char *c_string) {
-    return operator=(String(c_string));
-  }
+  // /**
+  //  * @brief Assigns a string view to the Node.
+  //  * @param string_view The string view to assign.
+  //  * @return Reference to the Node.
+  //  */
+  // Node &operator=(std::string_view string_view) {
+  //   return operator=(String(string_view));
+  // }
+  //
+  // /**
+  //  * @brief Assigns a C-string to the Node.
+  //  * @param c_string The C-string to assign.
+  //  * @return Reference to the Node.
+  //  */
+  // Node &operator=(const char *c_string) {
+  //   return operator=(String(c_string));
+  // }
 
   /**
    * @brief Assigns a boolean value to the Node.
@@ -543,8 +591,9 @@ class Node {
    * @param integer The integer value to assign.
    * @return Reference to the Node.
    */
-  Node &operator=(Integer integer) {
-    value_ = integer;
+  template <Detail::Integer I>
+  Node &operator=(I integer) {
+    value_ = Integer(integer);
     return *this;
   }
 
@@ -553,8 +602,9 @@ class Node {
    * @param floating The floating-point value to assign.
    * @return Reference to the Node.
    */
-  Node &operator=(Floating floating) {
-    value_ = floating;
+  template <Detail::Floating F>
+  Node &operator=(F floating) {
+    value_ = Floating(floating);
     return *this;
   }
 
@@ -563,8 +613,9 @@ class Node {
    * @param sequence The sequence to assign.
    * @return Reference to the Node.
    */
-  Node &operator=(Sequence sequence) {
-    value_ = sequence;
+  template <Detail::Sequence S>
+  Node &operator=(S sequence) {
+    value_ = std::move(sequence);
     return *this;
   }
 
@@ -573,13 +624,14 @@ class Node {
    * @param object The object to assign.
    * @return Reference to the Node.
    */
-  Node &operator=(Object object) {
-    value_ = object;
+  template <Detail::Object O>
+  Node &operator=(O object) {
+    value_ = std::move(object);
     return *this;
   }
 
   template <Detail::HasSerialiserImpl Input>
-  Node &operator=(Input input) {
+  Node &operator=(const Input &input) {
     Detail::CallSerialiser(input, *this);
     return *this;
   }
@@ -775,31 +827,6 @@ class Node {
   /// The variant holding the Node's value.
   Value value_;
 
-  /// @cond INTERNAL
-  /// Type trait to check if a type is String.
-  template <typename T>
-  static constexpr bool IsStringT = std::is_same_v<T, String>;
-
-  /// Type trait to check if a type is Boolean.
-  template <typename T>
-  static constexpr bool IsBooleanT = std::is_same_v<T, Boolean>;
-
-  /// Type trait to check if a type is an integral type.
-  template <typename T>
-  static constexpr bool IsIntegerT = std::is_integral_v<T>;
-
-  /// Type trait to check if a type is a floating-point type.
-  template <typename T>
-  static constexpr bool IsFloatingT = std::is_floating_point_v<T>;
-
-  /// Type trait to check if a type is Sequence.
-  template <typename T>
-  static constexpr bool IsSequenceT = std::is_same_v<T, Sequence>;
-
-  /// Type trait to check if a type is Object.
-  template <typename T>
-  static constexpr bool IsObjectT = std::is_same_v<T, Object>;
-  /// @endcond
 
   /**
    * @brief Provides subscript operator access to a sequence node. 
