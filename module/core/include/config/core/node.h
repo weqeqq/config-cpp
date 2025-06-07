@@ -26,6 +26,86 @@
 
 namespace Config {
 
+class Node;
+
+template <typename T>
+struct Serialiser {
+
+  Serialiser(const T &, Node &) {
+    static_assert(false, "Unimplemented");
+  }
+};
+
+template <typename T>
+struct Deserialiser {
+
+  Deserialiser(const Node &, T &) {
+    static_assert(false, "Unimplemented");
+  }
+};
+
+namespace Detail {
+
+template <typename Serialiser, typename Input>
+concept SerialiserImpl = 
+requires(
+  const Input &input, Node &node
+) { { Serialiser(input, node)() } -> std::same_as<void>; };
+
+template <typename Input>
+concept HasExternalSerialiserImpl = 
+  SerialiserImpl<Serialiser<Input>, Input>;
+
+template <typename Input>
+concept HasInternalSerialiserImpl = 
+  SerialiserImpl<typename Input::Serialiser, Input>;
+
+template <typename Input>
+concept HasSerialiserImpl = 
+  HasExternalSerialiserImpl<Input> || 
+  HasInternalSerialiserImpl<Input>;
+
+namespace {
+template <HasExternalSerialiserImpl Input>
+void CallSerialiser(const Input &input, Node &node) {
+  Serialiser<Input>(input, node)();
+}
+template <HasInternalSerialiserImpl Input>
+void CallSerialiser(const Input &input, Node &node) {
+  typename Input::Serialiser(input, node)();
+}
+}
+template <typename Deserialiser, typename Output>
+concept DeserialiserImpl = 
+requires(
+  const Node &node, Output &output 
+) { { Deserialiser(node, output)() } -> std::same_as<void>; };
+
+template <typename Output> 
+concept HasExternalDeserialiserImpl = 
+  DeserialiserImpl<Deserialiser<Output>, Output>;
+
+template <typename Output>
+concept HasInternalDeserialiserImpl = 
+  DeserialiserImpl<typename Output::Deserialiser, Output>;
+
+template <typename Output>
+concept HasDeserialiserImpl = 
+  HasExternalDeserialiserImpl<Output> || 
+  HasInternalDeserialiserImpl<Output>;
+
+namespace {
+template <HasExternalDeserialiserImpl Output>
+void CallDeserialiser(const Node &node, Output &output) {
+  Deserialiser<Output>(node, output)();
+}
+template <HasInternalDeserialiserImpl Output>
+void CallDeserialiser(const Node &node, Output &output) {
+  typename Output::Deserialiser(node, output)();
+}
+}
+}
+
 /**
  * @class NodeError
  * @brief Base class for errors related to Node operations.
@@ -139,6 +219,11 @@ class Node {
    * @param object The object to initialize the Node with.
    */
   Node(Object object) : value_(std::move(object)) {}
+
+  template <Detail::HasSerialiserImpl Input>
+  Node(Input input) : Node() {
+    Detail::CallSerialiser(input, *this);
+  }
 
   /**
    * @brief Checks if the Node holds a null value.
@@ -323,6 +408,13 @@ class Node {
     throw NodeError(std::format(
         "Conversion {} -> {} failed.", TypeString(), Demangle<T>()));
   }
+  template <Detail::HasDeserialiserImpl Output>
+  Output To() {
+    Output output;
+    Detail::CallDeserialiser(*this, output);
+
+    return output;
+  }
 
   /**
    * @brief Conversion operator to String reference.
@@ -483,6 +575,12 @@ class Node {
    */
   Node &operator=(Object object) {
     value_ = object;
+    return *this;
+  }
+
+  template <Detail::HasSerialiserImpl Input>
+  Node &operator=(Input input) {
+    Detail::CallSerialiser(input, *this);
     return *this;
   }
 
