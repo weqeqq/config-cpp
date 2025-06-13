@@ -4,28 +4,34 @@ set(name config-io)
 add_library(${name})
 add_library(config::io ALIAS ${name})
 
-include(cmake/generate-export-header.cmake)
+GenerateExportHeader(
+  ${name}
+  config/io/export.h
+)
 target_sources(${name}
   PUBLIC 
-    FILE_SET  HEADERS 
-    BASE_DIRS include ${EXPORT_HEADER_BASE_DIR}
+    FILE_SET HEADERS BASE_DIRS 
+      include 
+      ${export_header_dir}
     FILES 
       include/config/io/error.h 
       include/config/io/open.h
       include/config/io/save.h
-
-      ${EXPORT_HEADER_FILE_NAME}
-
+      ${export_header_file}
   PRIVATE 
     source/open.cc 
     source/save.cc 
 )
-include(cmake/dependency/file.cmake)
-
+Dependency(config::external::file
+  REPOSITORY 
+    weqeqq/file-cpp 
+  TAG        
+    d7eda176f32ec5b45eac172e2cddb08d562d3ebb
+)
 target_link_libraries(${name} 
   PUBLIC 
     config::core 
   PRIVATE 
     config::format
-    dependency::file
+    config::external::file
 )
