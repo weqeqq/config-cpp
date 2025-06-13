@@ -29,7 +29,7 @@
       "inherits": [
         "cmake-flags"
       ],
-      "generator"      : "Ninja",
+      "generator"      : "Unix Makefiles",
       "cacheVariables" : { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {
@@ -39,7 +39,7 @@
       "inherits": [
         "cmake-flags"
       ],
-      "generator"      : "Ninja",
+      "generator"      : "Unix Makefiles",
       "cacheVariables" : { "CMAKE_BUILD_TYPE": "Release" }
     },
     {
