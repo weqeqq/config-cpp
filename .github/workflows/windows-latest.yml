@@ -23,8 +23,3 @@ jobs:
         with:
           platform: x64
       - run: cmake --workflow ci-clang
-  build-mingw:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cmake --workflow ci-gcc

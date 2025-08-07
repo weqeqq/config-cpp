@@ -77,10 +77,6 @@ if(CONFIG_CPP_BUILD_STATIC)
 endif()
 foreach(target ConfigCppShared ConfigCppStatic)
     if(TARGET ${target})
-        set_property(TARGET ${target}
-            PROPERTY
-                OUTPUT_NAME configcpp
-        )
         target_compile_features(${target} PUBLIC cxx_std_20)
         target_sources(${target}
             PUBLIC
