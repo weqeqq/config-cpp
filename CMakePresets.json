@@ -7,140 +7,132 @@
   },
   "configurePresets": [
     {
-      "name"   : "cmake-flags",
-      "hidden" : true,
-
-      "warnings": {
-        "dev"           : false,
-        "deprecated"    : false,
-        "uninitialized" : false,
-        "unusedCli"     : true,
-        "systemVars"    : true
-      },
-      "errors": {
-        "dev"        : false,
-        "deprecated" : false 
-      }
-    },
-    {
-      "name"   : "debug-build",
-      "hidden" : true,
-
-      "inherits": [
-        "cmake-flags"
-      ],
-      "generator"      : "Unix Makefiles",
-      "cacheVariables" : { "CMAKE_BUILD_TYPE": "Debug" }
-    },
-    {
-      "name"   : "release-build",
-      "hidden" : true,
-
-      "inherits": [
-        "cmake-flags"
-      ],
-      "generator"      : "Unix Makefiles",
-      "cacheVariables" : { "CMAKE_BUILD_TYPE": "Release" }
-    },
-    {
       "name": "debug",
-
-      "inherits": [
-        "debug-build"
-      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_CXX_FLAGS": "-Wall -Wpedantic -g"
+      },
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/debug"
     },
     {
-      "name"      : "x86_64-linux",
-      "binaryDir" : "${sourceDir}/build/x86_64-linux",
-
-      "inherits": [
-        "release-build"
-      ]
-    },
-    {
-      "name"      : "x86_64-macos",
-      "binaryDir" : "${sourceDir}/build/x86_64-macos",
-
-      "inherits": [
-        "release-build"
-      ],
-      "cacheVariables": { 
-        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/x86_64-macos.cmake" 
-      }
-    },
-    {
-      "name"      : "arm64-macos",
-      "binaryDir" : "${sourceDir}/build/arm64-macos",
-
-      "inherits": [
-        "release-build"
-      ],
-      "cacheVariables": { 
-        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/arm64-macos.cmake" 
-      }
-    },
-    {
-      "name"      : "x86_64-windows",
-      "binaryDir" : "${sourceDir}/build/x86_64-windows",
-
-      "inherits": [
-        "release-build"
-      ],
+      "name": "release",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/x86_64-windows.cmake"
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release"
+    },
+    {
+      "name": "ci",
+      "hidden": true,
+      "cacheVariables": {
+        "CONFIG_CPP_BUILD_TESTS": "ON",
+        "CONFIG_CPP_FETCH_DEPS": "ON",
+        "CONFIG_CPP_BUILD_DOCS": "ON"
       }
     },
     {
-      "name"      : "x86-windows",
-      "binaryDir" : "${sourceDir}/build/x86-windows",
-
-      "inherits": [
-        "release-build"
-      ],
+      "name": "ci-msvc",
+      "inherits": "ci",
+      "binaryDir": "${sourceDir}/build/ci-msvc",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE" : "${sourceDir}/toolchain/x86-windows.cmake"
+        "CMAKE_GENERATOR": "Visual Studio 17 2022",
+        "CMAKE_GENERATOR_PLATFORM": "x64",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      }
+    },
+    {
+      "name": "ci-clang",
+      "inherits": "ci",
+      "binaryDir": "${sourceDir}/build/ci-clang",
+      "cacheVariables": {
+        "CMAKE_GENERATOR": "Ninja",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "ci-gcc",
+      "inherits": "ci",
+      "binaryDir": "${sourceDir}/build/ci-gcc",
+      "cacheVariables": {
+        "CMAKE_GENERATOR": "Ninja",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
       }
     }
   ],
   "buildPresets": [
     {
-      "configuration"   : "Debug",
-      "name"            : "debug",
-      "configurePreset" : "debug"
+      "name": "debug",
+      "configuration": "Debug",
+      "configurePreset": "debug"
     },
     {
-      "configuration"   : "Release",
-      "name"            : "x86_64-linux",
-      "configurePreset" : "x86_64-linux"
-    }, 
-    {
-      "configuration"   : "Release",
-      "name"            : "x86_64-macos",
-      "configurePreset" : "x86_64-macos"
+      "name": "release",
+      "configuration": "Release",
+      "configurePreset": "release"
     },
     {
-      "configuration"   : "Release",
-      "name"            : "arm64-macos",
-      "configurePreset" : "arm64-macos"
+      "name": "ci-msvc",
+      "configuration": "Debug",
+      "configurePreset": "ci-msvc"
     },
     {
-      "configuration"   : "Release",
-      "name"            : "x86_64-windows",
-      "configurePreset" : "x86_64-windows"
+      "name": "ci-gcc",
+      "configuration": "Debug",
+      "configurePreset": "ci-gcc"
     },
     {
-      "configuration"   : "Release",
-      "name"            : "x86-windows",
-      "configurePreset" : "x86-windows"
+      "name": "ci-clang",
+      "configuration": "Debug",
+      "configurePreset": "ci-clang"
     }
   ],
   "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-msvc",
+      "configurePreset": "ci-msvc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-gcc",
+      "configurePreset": "ci-gcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-clang",
+      "configurePreset": "ci-clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
   ],
   "workflowPresets": [
     {
-      "name"  : "debug",
-      "steps" : [
+      "name": "debug",
+      "steps": [
         {
           "type": "configure",
           "name": "debug"
@@ -148,71 +140,78 @@
         {
           "type": "build",
           "name": "debug"
+        },
+        {
+          "type": "test",
+          "name": "debug"
         }
       ]
     },
     {
-      "name"  : "x86_64-linux",
-      "steps" : [
+      "name": "release",
+      "steps": [
         {
           "type": "configure",
-          "name": "x86_64-linux"
+          "name": "release"
         },
         {
           "type": "build",
-          "name": "x86_64-linux"
+          "name": "release"
+        },
+        {
+          "type": "test",
+          "name": "release"
         }
       ]
     },
     {
-      "name"  : "x86_64-macos",
-      "steps" : [
+      "name": "ci-msvc",
+      "steps": [
         {
           "type": "configure",
-          "name": "x86_64-macos"
+          "name": "ci-msvc"
         },
         {
           "type": "build",
-          "name": "x86_64-macos"
+          "name": "ci-msvc"
+        },
+        {
+          "type": "test",
+          "name": "ci-msvc"
         }
       ]
     },
     {
-      "name"  : "arm64-macos",
-      "steps" : [
+      "name": "ci-gcc",
+      "steps": [
         {
           "type": "configure",
-          "name": "arm64-macos"
+          "name": "ci-gcc"
         },
         {
           "type": "build",
-          "name": "arm64-macos"
+          "name": "ci-gcc"
+        },
+        {
+          "type": "test",
+          "name": "ci-gcc"
         }
       ]
     },
     {
-      "name"  : "x86_64-windows",
-      "steps" : [
+      "name": "ci-clang",
+      "steps": [
         {
           "type": "configure",
-          "name": "x86_64-windows"
+          "name": "ci-clang"
         },
         {
           "type": "build",
-          "name": "x86_64-windows"
-        }
-      ]
-    },
-    {
-      "name"  : "x86-windows",
-      "steps" : [
-        {
-          "type": "configure",
-          "name": "x86-windows"
+          "name": "ci-clang"
         },
         {
-          "type": "build",
-          "name": "x86-windows"
+          "type": "test",
+          "name": "ci-clang"
         }
       ]
     }
